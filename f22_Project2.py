@@ -27,7 +27,6 @@ def get_listings_from_search_results(html_file):
     """
     listings = []
     
-    # for file in html_files:
     with open("html_files/listing_1623609.html", "r") as f:
         
         contents = f.read()
@@ -38,7 +37,7 @@ def get_listings_from_search_results(html_file):
         print(name)
         print(soup.p.get_text())
         # listing = (name, cost, number)
-        # listings.append(listing)
+        listings.append(listing)
         
     
     return listings
