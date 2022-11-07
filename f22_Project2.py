@@ -25,22 +25,35 @@ def get_listings_from_search_results(html_file):
         ('Loft in Mission District', 210, '1944564'),  # example
     ]
     """
+    source_dir = os.path.dirname(__file__)
+    full_path = os.path.join(source_dir, html_file)
+    f = open(full_path, 'r')
+    file_data = f.read()
+    f.close()
     listings = []
-    
-    with open("html_files/listing_1623609.html", "r") as f:
-        
-        contents = f.read()
-        soup = BeautifulSoup(contents, 'html.parser')
-        # print(soup.h2)
-        name = str(soup.h1.get_text())
-        name = name.replace('- ', '')
-        print(name)
-        print(soup.p.get_text())
-        # listing = (name, cost, number)
-        listings.append(listing)
-        
-    
-    return listings
+    soup = BeautifulSoup(file_data, 'html.parser')
+    listing_names = soup.find_all('div', class_="t1jojoys")
+    costs = soup.find_all('span', class_="_tyxjp1")
+    temp = soup.find_all('div', itemtype='http://schema.org/ListItem')
+    listing_names = soup.find_all('div', class_='t1jojoys')
+    costs = soup.find_all('span', class_='_tyxjp1')
+    temp = soup.find_all('div', itemtype='http://schema.org/ListItem')
+    id_lst = []
+    for i in temp:
+        url = i.find('meta', itemprop='url')["content"]
+        found_url = url.split("?")[0]
+        id = found_url.split('/')[-1]
+        id_lst.append(id)
+    listing_names_list = []
+    costs_list = []
+    result = []
+    for listing_name in listing_names:
+        listing_names_list.append(listing_name.text.strip())
+    for cost in costs:
+        costs_list.append(cost.text.strip()[1:])  # get rid of dollar signs
+    for i in range(len(costs_list)):
+        result.append((listing_names_list[i], int(costs_list[i]), id_lst[i]))
+    return result
 
 
 def get_listing_information(listing_id):
@@ -162,7 +175,8 @@ class TestCases(unittest.TestCase):
         # check that the variable you saved after calling the function is a list
         self.assertEqual(type(listings), list)
         # check that each item in the list is a tuple
-
+        for listing in listings:
+            self.assertEqual(type(listing), tuple)
         # check that the first title, cost, and listing id tuple is correct (open the search results html and find it)
 
         # check that the last title is correct (open the search results html and find it)
