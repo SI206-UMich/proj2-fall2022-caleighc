@@ -1,5 +1,6 @@
-# Caleigh Crossman, caleighc, 68825599
-
+# Caleigh Crossman
+# caleighc
+# 68825599
 from xml.sax import parseString
 from bs4 import BeautifulSoup
 import re
@@ -86,36 +87,21 @@ def get_listing_information(listing_id):
     file_data = f.read()
     f.close()
     soup = BeautifulSoup(file_data, 'html.parser')
-    
-    # Policy number
-    tags = soup.find('li', class_='f19phm7j')
-    policy_number = tags.find("span", class_='ll4r2nl').get_text()
-    if "exempt" in policy_number or "Exempt" in policy_number:
-        policy_number = "Exempt"
-    if "pending" in policy_number or "Pending" in policy_number:
+    policy_number = soup.find('li', class_='f19phm7j').span.text
+    if "pending" in policy_number.lower():
         policy_number = "Pending"
-    if policy_number == "License not needed per OSTR":
+    elif "not needed" in policy_number.lower() or "exempt" in policy_number.lower():
         policy_number = "Exempt"
-        
-    # Room type from h2 subtitle
-    room = soup.find('h2').get_text()
-    if "private" in room or "Private" in room: 
+    room_type = soup.find('h2', class_='_14i3z6h').text.lower()
+    place_type = "Entire Room"
+    if "private" in room_type:
         place_type = "Private Room"
-    elif "shared" in room or "Shared" in room:
+    elif "shared" in room_type:
         place_type = "Shared Room"
-    else:
-        place_type = "Entire Room"
-        
-    # Number of bedrooms
-    beds = soup.find('ol', class_='lgx66tx')
-    bed = beds.find_all('span')[5]
-    number_of_bedrooms = bed.get_text().split()[0]
-    if "Studio" in number_of_bedrooms:
-        number_of_bedrooms = 1
-    else:
-        number_of_bedrooms = int(bed.get_text().split()[0])
-    listing_tuple = (policy_number, place_type, number_of_bedrooms)
-    return listing_tuple 
+    bedrooms = soup.find_all('li', class_="l7n4lsf")[1].find_all('span')[2].text.split(' ')[0]
+    if bedrooms == "Studio":
+        bedrooms = "1"
+    return (policy_number, place_type, int(bedrooms))
 
 
 def get_detailed_listing_database(html_file):
@@ -222,7 +208,25 @@ def extra_credit(listing_id):
     gone over their 90 day limit, else return True, indicating the lister has
     never gone over their limit.
     """
-    pass
+    file_html = "html_files/listing_" + listing_id + "_reviews.html"
+    source_dir = os.path.dirname(__file__)
+    full_path = os.path.join(source_dir, file_html)
+    f = open(full_path, 'r')
+    file_data = f.read()
+    f.close()
+    soup = BeautifulSoup(file_data, 'html.parser')
+    date_dict = {}
+    tags = soup.find_all('li', class_='_1f1oir5')
+    for tag in tags:
+        key = tag.text.split()[1]
+        if key in date_dict:
+            date_dict[key] += 1
+        else:
+            date_dict[key] = 1
+    for value in date_dict.values():
+        if value > 90:
+            return False
+    return True
 
 
 class TestCases(unittest.TestCase):
@@ -342,6 +346,10 @@ class TestCases(unittest.TestCase):
         self.assertEqual(type(invalid_listings[0]),str)
         # check that the first element in the list is '16204265'
         self.assertEqual(invalid_listings[0],"16204265")
+        
+    def test_extra_credit(self):
+        # check 1944564
+        self.assertEqual(extra_credit('1944564'), True)
 
 
 if __name__ == '__main__':
